@@ -1,0 +1,415 @@
+---
+title: "Cleaning Spanish Job Market Dataset"
+author: "Antonio Milán Otero"
+date: "December 15, 2018"
+output:
+  html_document:
+    toc: yes
+  pdf_document:
+    toc: yes
+  html_notebook: 
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load_libraries, include=FALSE}
+library(knitr)
+library(lubridate)
+library(VIM)
+library(stringr)
+library(psych)
+library(ggplot2)
+# for ploting correlations
+library(ellipse)
+```
+
+## 1. Descripció del dataset
+
+Aquest dataset prové de la pràctica anterior, en la qual, no vaig prestar gens d'atenció a la neteja de les dades, donant com a resultat un dataset molt brut. Això es va fer a proposit per tal de poder aprofitar aquest dataset en aquesta pràctica.
+
+Aquest dataset conté informació sobre ofertes laborals trobades a la web proporcionada per l'estat Espanyol per a tal proposit.
+
+La pregunta que volem respondre amb aquest dataset serà:
+
+- Quines regions d'Espanya generen més ofertes de treball?
+- Quin tipus de professional es el més solicitat a Espanya (durant el periode de mostreig)?
+- Estudi sobre els salaris en relació a les regions. A on trobem un major salari?
+
+A la pràctica anterior enumerabem també les següents idees:
+
+- Analitzar els diferents requeriments professionals que tenen les diferents autonomies d'Espanya.
+- Identificar el tipus i la qualitat del treball actual al país.
+- Analitzar les regions amb més i menys ofertes de treball.
+- Analitzar la distribució de les diferents professions en funció de la regió.
+- Ajudar a la creació d’un pla per potenciar el mercat laboral basat en el coneixement obtingut a través de les dades.
+
+Però aquestes les deixarem per futurs treballs.
+
+## 2. Integració i selecció de les dades d'interès a analitzar
+
+Per aquest apartat ja es va crear un script python que s'encarregaba d'ajuntar les dades obtingudes en diferents dies. La idea darrera d'aquest script era la de recolectar totes les dades disponibles a la web en una primera pasada, i desprès anar actualitzant el dataset agafant dades diaries i agrupant-les sota el mateix fitxer .csv
+
+Per tant, en aquest apartat considero que no haig de fer més que el ja fet fins a la data.
+
+El script es pot trobar en la següent URL:
+[https://github.com/amilan/spanish_job_market/blob/master/src/dataset_merge.py]
+
+També tinc en compte, que la web oficial de la qual es va extreure les dades, ja recopila aquestes dades de diferent fonts, així doncs, no considero que sigui necessari l'integració de dades de diferentes fonts, ja que aquesta ha estat realitzada anteriorment.
+
+> Hauria d'explicar una mica com faria aquesta integració en cas de que no hagués estat feta per la propia font utilitzada?
+> Revisar si s'ha d'expandir més aquesta explicació sobre la integració i selecció de dades d'interès
+
+En aquest apartat seleccionarem les dades necessaries per als nostres estudis.
+Hem de tenir en compte, que a la pràctica anterior hem vaig limitar a agafar totes les dades possibles i a possar-les en un fitxer .csv.
+Aquestes dades provenien d'una base de dades NoSQL, ja que vaig detectar que amb les mateixes crides, podiem obtenir dades amb diferents esquemes (schemaless). Així doncs, farem una selecció de les dades que utilitzarem i eliminarem així dades no necessàries o repetides.
+
+Començem carregant les dades:
+
+```{r}
+offers <- read.csv("./data/offers_dataset.csv")
+head(offers)
+```
+
+```{r}
+length(offers$categoria)
+```
+
+Com podem veure, tenim 40534 registres i 94 característiques, moltes de les quals no ens seràn d'utilitat.
+
+```{r}
+names(offers)
+```
+
+Així doncs, començarem seleccionant les dades d'interés. Recordem que la meva intenció es la de fer un estudi sobre els tipus d'ofertes de treballs a Espanya i en concret a cadascuna de les regions.
+
+Primerament, comprovarem que només tenim dades d'ofertes realitzades a Espanya.
+
+```{r}
+levels(offers$paisS)
+```
+
+Comprovem dues coses, que tenim ofertes d'Espanya i també al Congo, i que tenim un problema de codificació de caracters, ja que ens troba el país d'Espanya en tres factors diferents. Com que només volem utilitzar les dades de les ofertes a Espanya, podem seleccionar totes les que no siguin al Congo i desprès eliminar aquesta columna.
+
+Podem corregir les dades erronees de país:
+
+```{r}
+offers$paisS <- sub("ESPAÃ‘A", "ESPAÑA", offers$paisS)
+offers$paisS <- sub("ESPA��A", "ESPAÑA", offers$paisS)
+levels(factor(offers$paisS))
+```
+
+També podriem haver canviat la codificació dels caracters, com veurem més endavant.
+
+Seleccionem ara només les ofertes a Espanya.
+
+```{r}
+#offers_sp <- subset(offers, !(paisS %in% c("CONGO"))
+#offers_sp <- subset(offers, !(paisS == "CONGO"))
+offers <- subset(offers, paisS == "ESPAÑA")
+levels(factor(offers$paisS))
+# paisS es ara del tipus chr, hauriem de convertirla de nou a factor
+offers$paisS <- factor(offers$paisS)
+```
+```{r}
+class(offers$paisS)
+```
+
+Seguidament, eliminarem les colummnes que ofereixen informació duplicada. Ens quedarem amb les característiques:
+
+- categoriaF
+- ciudadF
+- comunidadF
+- educacionF
+- fechaCreacion
+- jornadaF
+- paisS
+- provinciaS
+- salarioMax
+- salarioMin
+- subcategoriaS
+
+```{r}
+selected_features <- c("categoriaF", "ciudadF", "comunidadF", "educacionF", "fechaCreacion", "jornadaF", "paisS", "provinciaS", "salarioMax", "salarioMin", "subcategoriaS")
+offers <- offers[selected_features]
+head(offers)
+```
+
+# 3. Neteja de les dades
+
+## Les dades contenen zeros o elements buits? Com gestionaries aquests casos?
+
+```{r}
+sapply(offers, function(x)(sum(is.na(x))))
+```
+
+```{r}
+length(offers$salarioMax)
+```
+
+```{r}
+levels(offers$comunidadF)
+```
+
+```{r}
+offers$comunidadF <- sub("ARAGÃ“N", "ARAGÓN", offers$comunidadF)
+offers$comunidadF <- sub("CASTILLA Y LE��N", "CASTILLA Y LEÓN", offers$comunidadF)
+offers$comunidadF <- sub("CASTILLA Y LEÃ“N", "CASTILLA Y LEÓN", offers$comunidadF)
+offers$comunidadF <- sub("CATALU��A", "CATALUÑA", offers$comunidadF)
+offers$comunidadF <- sub("CATALUÃ‘A", "CATALUÑA", offers$comunidadF)
+offers$comunidadF <- sub("ANDALUCÃ�A", "ANDALUCÍA", offers$comunidadF)
+offers$comunidadF <- sub("REGI��N DE MURCIA", "REGIÓN DE MURCIA", offers$comunidadF)
+offers$comunidadF <- sub("REGIÃ“N DE MURCIA", "REGIÓN DE MURCIA", offers$comunidadF)
+offers$comunidadF <- sub("PAÃ�S VASCO", "PAÍS VASCO", offers$comunidadF)
+# offers$comunidadF <- sub("Sin especificar", "", offers$comunidadF)
+offers$comunidadF <- factor(offers$comunidadF)
+levels(offers$comunidadF)
+```
+
+Veiem que en aquest cas podem tenir valor buit ("") o __sin especificar__. Ens interessa deixar els dos casos, ja que __sin especificar__ pot ser una 
+
+> TODO: Descriure millor com utilitzarem els casos buits.
+
+```{r}
+# offers[which(offers$comunidadF == "CATALUÑA"),]
+levels(offers$categoriaF)
+```
+
+En comptes de corregir un a un, transformarem les dades al format latin1.
+
+```{r}
+# convertim les dades a encoding latin1
+offers$categoriaF <- factor(iconv(offers$categoriaF, to = "latin1"))
+levels(offers$categoriaF)
+```
+> TODO:
+Revisar provincias!!! Guipuzcua esta repetida!!!!
+
+```{r}
+# offers[which(offers$comunidadF == "CATALUÑA"),]
+levels(offers$provinciaS)
+```
+
+```{r}
+# offers[which(offers$comunidadF == "CATALUÑA"),]
+levels(offers$jornadaF)
+```
+
+```{r}
+# offers[which(offers$comunidadF == "CATALUÑA"),]
+# convertim les dades a encoding latin1
+offers$subcategoriaS <- factor(iconv(offers$subcategoriaS, to = "latin1"))
+levels(offers$subcategoriaS)
+```
+
+```{r}
+# offers[which(offers$comunidadF == "CATALUÑA"),]
+# convertim les dades a encoding latin1
+offers$educacionF <- factor(iconv(offers$educacionF, to = "latin1"))
+levels(offers$educacionF)
+```
+
+Tot i la conversió, encara tenim algun cas que no s'ha codificat correctament. El corregirem manualment.
+
+```{r}
+offers$educacionF <- sub("Diplomado o Ingeniero TÃ©cnico", "Diplomado o Ingeniero Técnico", offers$educacionF)
+offers$educacionF <- factor(offers$educacionF)
+levels(offers$educacionF)
+```
+
+Passem ara a netejar les característiques numériques. Veiem que aproximadament una quarta part de les dades dispossen de valors de salari mínim i máxim. Aquests ens podrien ser suficient per al nostres estudi, sempre i quan tinguem suficient casos d'estudi per a les diferentes regions.
+
+Llavors, ens quedarem amb les dades que tenen un salari mínim i descartarem la resta. Com que hi ha menys dades amb salari máxim, aquest l'imputarem utilitzant knn.
+
+```{r}
+offers_sp <- subset(offers, !is.na(offers$salarioMin))
+```
+
+```{r}
+sapply(offers_sp, function(x)(sum(is.na(x))))
+```
+
+```{r}
+offers_sp$salarioMax <- kNN(offers_sp)$salarioMax
+sapply(offers_sp, function(x)(sum(is.na(x))))
+```
+
+Ara només ens queden per tractar 4 casos de categoriaF i 2 de subcategoriaS.
+
+```{r}
+kable(subset(offers_sp, is.na(offers_sp$categoriaF)))
+```
+
+Mirant la subcategoria, veiem clarament que les dues últimes pertanyen a la categoria: INFORMÁTICA/TELECOMUNICACIONES, però malauradament, les dues primeres no tenen subcategoria. Així doncs, descartarem les dues primeres i ens quedarem amb les dues últimes, introduint el nou valor a la categoria.
+
+```{r}
+offers_sp <- subset(offers_sp, !is.na(offers_sp$subcategoriaS))
+```
+
+```{r}
+sapply(offers_sp, function(x)(sum(is.na(x))))
+```
+
+Com que nomès ens queden dos valors NA per substituir i son els que coneixem, podem fer la següent operació.
+
+```{r}
+offers_sp[is.na(offers_sp)] <- c("INFORMÁTICA/TELECOMUNICACIONES")
+```
+
+```{r}
+sapply(offers_sp, function(x)(sum(is.na(x))))
+```
+
+Comprovem que ja no tenim cap valor NA.
+
+```{r}
+summary(offers_sp)
+```
+
+Seguidament podriem comprovar si les nostres dades tenen el tipus que desitjem.
+
+```{r}
+sapply(offers_sp, function(x)(class(x)))
+```
+
+Veiem que haurem de tractar el format de la característica fechaCreacion. En aquest moment, tenim la data com a un string amb el format: anys, mes, dia, hora. En el nostre cas, nomès amb l'any, mes i dia en tindrem prou. A més, haurem de donar-li el tipus de date type.
+
+```{r}
+offers_sp$fechaCreacion <- as.Date(gsub("T\\d*:\\d*:\\d*Z", "", offers_sp$fechaCreacion))
+sapply(offers_sp, function(x)(class(x)))
+```
+
+```{r}
+summary(offers_sp)
+```
+
+Per últim, podem canviar el nombre de les característiques per que tinguin una mica més de sentit i guardem les dades en un nou fitxer csv.
+
+```{r}
+names(offers_sp)
+```
+
+```{r}
+final_names <- c("Categoria", "Ciudad", "Comunidad", "Educacion", "FechaCreacion", "TipoJornada", "Pais", "Provincia", "SalarioMax", "SalarioMin", "SubCategoria")
+names(offers_sp) <- final_names
+head(offers_sp)
+```
+
+Veiem també que ja no necessitem la variable Pais. Podriem eliminar-la.
+
+```{r}
+offers_sp$Pais <- NULL
+#names(offers_sp)
+tail(offers_sp)
+```
+
+Per últim, podriem exportar el nostre conjunt de dades netejat.
+
+```{r}
+write.csv(offers_sp, "./data/spanish_job_offers_clean.csv")
+```
+
+## Identificació i tractament de valors extrems.
+
+Donem ara un cop d'ull a les dades per tal d'identificar valors extrems.
+
+```{r}
+boxplot(offers_sp$SalarioMin)
+```
+
+```{r}
+boxplot(offers_sp$SalarioMax)
+```
+
+```{r}
+boxplot(offers_sp$SalarioMin ~ offers_sp$Comunidad)
+```
+
+```{r}
+boxplot(offers_sp$SalarioMax ~ offers_sp$Comunidad)
+```
+
+```{r}
+boxplot.stats(offers_sp$SalarioMin)$out
+```
+
+```{r}
+boxplot.stats(offers_sp$SalarioMax)$out
+```
+
+Veiem que tenim valors extrems tant en els salaris màxims com en els mínims. En el cas dels salaris mínims, son valor raonables, i crec que els hauriem de deixar tal qual son. En canvi, trobem dos valors extrems molt curiosos, que semblen ser alguna mena de valor prefixat per a no donar un límit superior. En aquest cas, ja que son només dos valors i tenim suficient dades per al nostre estudi, considero que lo millor sería treure les dades corresponents. Així doncs, ho farem de la següent manera.
+
+```{r}
+kable(subset(offers_sp, SalarioMax == 9999999))
+```
+
+```{r}
+kable(subset(offers_sp, SalarioMin == 0))
+```
+
+```{r}
+offers_sp <- subset(offers_sp, !(SalarioMax==9999999))
+```
+
+```{r}
+offers_sp$SalarioMin <- as.numeric(offers_sp$SalarioMin)
+offers_sp$SalarioMax <- as.numeric(offers_sp$SalarioMax)
+boxplot(offers_sp$SalarioMax ~ offers_sp$Comunidad)
+```
+
+Veiem que els valors extrems que tenim ara son més raonables, i considero que els podriem deixar tal qual.
+
+```{r}
+boxplot(offers_sp$SalarioMax ~ offers_sp$Categoria)
+```
+
+# 4. Anàlisi de les dades
+## Selecció dels grups de dades que es volen analitzar/comparar (planificació dels anàlisis a aplicar)
+
+>TODO:
+Agrupar por comunidad
+
+## Comprovació de la normalitat i homogeneïtat de la variància.
+
+Començem mirant si les variables pertanyen a una distribució normal.
+
+```{r}
+p_val_sal_min <- shapiro.test(subset(offers_sp, Comunidad == c("MADRID"))$SalarioMin)$p.value
+#p_val_sal_max <- shapiro.test(offers_sp$SalarioMax)$p.value
+sprintf("P value para SalarioMin: %f", p_val_sal_min)
+#sprintf("P Value para SalarioMax: %d", p_val_sal_max)
+```
+
+```{r}
+hist(subset(offers_sp, Comunidad == c("MADRID"))$SalarioMin)
+```
+
+```{r}
+hist(subset(offers_sp, Comunidad == c("CATALUÑA"))$SalarioMin)
+```
+
+## Aplicació de proves estadístiques per comparar els grups de dades. En funció de les dades de l'objectiu de l'estudi, aplicar proves de contrast d'hipòtesi, correlacions, regressions, etc.
+
+```{r}
+cor_matrix <- cor(offers_sp$SalarioMin, offers_sp$SalarioMax)
+round(cor_matrix, 2)
+```
+
+En aquest punt, ens adonem que hi ha un tipus de registres en els quals tenim 0 a salari minim i máxim, lo que vol dir que aquestes ofertes no han introduit un valor real en quant als salaris, o bé son ofertes de pràctiques no remunerades. Ninguna d'aquestes opcions les volem contemplar en el nostre estudi, així que com tenim dades suficients, podem prescindir d'aquestes.
+
+```{r}
+offers_sp <- subset(offers_sp, !(SalarioMin == 0 & SalarioMax == 0))
+```
+
+> TODO: En comptes d'utilitzar KNN utilitzar les mitjanes poblacionals per categoria
+> TODO: Hi ha valors de salari Min i Max que s'han d'intercanviar.
+
+
+# 5. Representació dels resultats a partir de taules i gràfiques.
+
+# 6. Resolució del problema. A partir dels resultats obtinguts, quines són les conclusions? Els resultats permeten respondre al problema?
+
+# 7. Codi: Cal adjuntar el codi
+
