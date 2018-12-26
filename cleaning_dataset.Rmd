@@ -125,29 +125,21 @@ Seguidament, eliminarem les colummnes que ofereixen informació duplicada. Ens q
 - educacionF
 - fechaCreacion
 - jornadaF
-- paisS
 - provinciaS
 - salarioMax
 - salarioMin
 - subcategoriaS
 
 ```{r}
-selected_features <- c("categoriaF", "ciudadF", "comunidadF", "educacionF", "fechaCreacion", "jornadaF", "paisS", "provinciaS", "salarioMax", "salarioMin", "subcategoriaS")
+selected_features <- c("categoriaF", "ciudadF", "comunidadF", "educacionF", "fechaCreacion", "jornadaF", "provinciaS", "salarioMax", "salarioMin", "subcategoriaS")
 offers <- offers[selected_features]
 head(offers)
 ```
 
 # 3. Neteja de les dades
 
-## Les dades contenen zeros o elements buits? Com gestionaries aquests casos?
+Com que ens hem adonat abans que hi teniem problemes de codificació amb els strings, lo primer que farem serà corregir aquests problemes.
 
-```{r}
-sapply(offers, function(x)(sum(is.na(x))))
-```
-
-```{r}
-length(offers$salarioMax)
-```
 
 ```{r}
 levels(offers$comunidadF)
@@ -163,17 +155,14 @@ offers$comunidadF <- sub("ANDALUCÃ�A", "ANDALUCÍA", offers$comunidadF)
 offers$comunidadF <- sub("REGI��N DE MURCIA", "REGIÓN DE MURCIA", offers$comunidadF)
 offers$comunidadF <- sub("REGIÃ“N DE MURCIA", "REGIÓN DE MURCIA", offers$comunidadF)
 offers$comunidadF <- sub("PAÃ�S VASCO", "PAÍS VASCO", offers$comunidadF)
-# offers$comunidadF <- sub("Sin especificar", "", offers$comunidadF)
+offers$comunidadF <- sub("Sin especificar", "", offers$comunidadF)
 offers$comunidadF <- factor(offers$comunidadF)
 levels(offers$comunidadF)
 ```
 
-Veiem que en aquest cas podem tenir valor buit ("") o __sin especificar__. Ens interessa deixar els dos casos, ja que __sin especificar__ pot ser una 
-
-> TODO: Descriure millor com utilitzarem els casos buits.
+Veiem que en aquest cas podem tenir valor buit ("") o __sin especificar__. Ens interessa deixar-ho com valor buit, ja que sabem que la oferta ha d'estar ubicada en alguna comunitat, però no sabem en quina.
 
 ```{r}
-# offers[which(offers$comunidadF == "CATALUÑA"),]
 levels(offers$categoriaF)
 ```
 
@@ -188,24 +177,28 @@ levels(offers$categoriaF)
 Revisar provincias!!! Guipuzcua esta repetida!!!!
 
 ```{r}
-# offers[which(offers$comunidadF == "CATALUÑA"),]
+levels(offers$provinciaS)
+```
+
+Podem veure que Guipúzcua està repetida degut a la mala codificació.
+
+```{r}
+# convertim les dades a encoding latin1
+offers$provinciaS <- factor(iconv(offers$provinciaS, to = "latin1"))
 levels(offers$provinciaS)
 ```
 
 ```{r}
-# offers[which(offers$comunidadF == "CATALUÑA"),]
 levels(offers$jornadaF)
 ```
 
 ```{r}
-# offers[which(offers$comunidadF == "CATALUÑA"),]
 # convertim les dades a encoding latin1
 offers$subcategoriaS <- factor(iconv(offers$subcategoriaS, to = "latin1"))
 levels(offers$subcategoriaS)
 ```
 
 ```{r}
-# offers[which(offers$comunidadF == "CATALUÑA"),]
 # convertim les dades a encoding latin1
 offers$educacionF <- factor(iconv(offers$educacionF, to = "latin1"))
 levels(offers$educacionF)
@@ -215,13 +208,36 @@ Tot i la conversió, encara tenim algun cas que no s'ha codificat correctament. 
 
 ```{r}
 offers$educacionF <- sub("Diplomado o Ingeniero TÃ©cnico", "Diplomado o Ingeniero Técnico", offers$educacionF)
+offers$educacionF <- sub("Sin especificar", "", offers$educacionF)
 offers$educacionF <- factor(offers$educacionF)
 levels(offers$educacionF)
 ```
 
+```{r}
+# convertim les dades a encoding latin1
+offers$ciudadF <- factor(iconv(offers$ciudadF, to = "latin1"))
+length(levels(offers$ciudadF))
+```
+
+He detectat que encara hi ha algun cas en el que no s'ha corregit bé, com per exemple Gijón, que apareix dues vegades en diferent format, però en aquest estudi no anirem al detall de ciutat, així que de moment no corregiré aquest problema.
+
+## Les dades contenen zeros o elements buits? Com gestionaries aquests casos?
+
+Com hem vist anteriorment, tenim dades amb element buits en les característiques del tipus factor. Hem convertit també les dades amb valors __sin especificar__ en valor buit, ja que aquest, per exemple, representa millor que la oferta està situada a una localització, però no sabem a on.
+
+Passem ara a mirar si tenim elements nulls (NA).
+
+```{r}
+sapply(offers, function(x)(sum(is.na(x))))
+```
+
+```{r}
+length(offers$salarioMax)
+```
+
 Passem ara a netejar les característiques numériques. Veiem que aproximadament una quarta part de les dades dispossen de valors de salari mínim i máxim. Aquests ens podrien ser suficient per al nostres estudi, sempre i quan tinguem suficient casos d'estudi per a les diferentes regions.
 
-Llavors, ens quedarem amb les dades que tenen un salari mínim i descartarem la resta. Com que hi ha menys dades amb salari máxim, aquest l'imputarem utilitzant knn.
+Llavors, ens quedarem amb les dades que tenen un salari mínim i descartarem la resta.
 
 ```{r}
 offers_sp <- subset(offers, !is.na(offers$salarioMin))
@@ -231,12 +247,27 @@ offers_sp <- subset(offers, !is.na(offers$salarioMin))
 sapply(offers_sp, function(x)(sum(is.na(x))))
 ```
 
+Com que hi ha menys dades amb salari máxim, podriem seguir alguna de les següents estratègies:
+- Descartar les dades sense salari maxim. Això reduiría molt el nombre de dades, però encara tindriem prou per al estudi que volem realitzar.
+- Imputar dades utilitzant KNN. Amb aquesta estratègia podriem obtenir els valors en funció de les dades veines.
+- Imputar els valors en funció de la mitjana poblacional de la mostra.
+
+En aquesta ocasió utilitzarem l'algoritme KNN.
+
 ```{r}
 offers_sp$salarioMax <- kNN(offers_sp)$salarioMax
 sapply(offers_sp, function(x)(sum(is.na(x))))
 ```
 
-Ara només ens queden per tractar 4 casos de categoriaF i 2 de subcategoriaS.
+>NOTE: the following chunk seems to be a mistake in executing the previous code several times.
+Veiem que tenim moltes ciutats amb NA. Seguirem la mateixa estrategia que abans i com que sabem que la oferta ha d'estar ubicada en alguna ciutat (encara que sigui oferta online), substituirem els NA per valors buits "".
+
+```{r, eval=FALSE}
+offers_sp$ciudadF[is.na(offers_sp$ciudadF)] <- ""
+sapply(offers_sp, function(x)(sum(is.na(x))))
+```
+
+Ara ens queden per tractar 4 casos de categoriaF i 2 de subcategoriaS.
 
 ```{r}
 kable(subset(offers_sp, is.na(offers_sp$categoriaF)))
@@ -292,17 +323,21 @@ names(offers_sp)
 ```
 
 ```{r}
-final_names <- c("Categoria", "Ciudad", "Comunidad", "Educacion", "FechaCreacion", "TipoJornada", "Pais", "Provincia", "SalarioMax", "SalarioMin", "SubCategoria")
+final_names <- c("Categoria", "Ciudad", "Comunidad", "Educacion", "FechaCreacion", "TipoJornada", "Provincia", "SalarioMax", "SalarioMin", "SubCategoria")
 names(offers_sp) <- final_names
 head(offers_sp)
 ```
 
-Veiem també que ja no necessitem la variable Pais. Podriem eliminar-la.
+Després de fer aquesta neteja, encara podriem comprobar si les nostres dades son consistents. Per fer aixó podriem mirar si tenim ofertes en les que el salari mínim sigui mallor que el salari màxim, i de ser així, eliminar-les del nostre dataset.
 
 ```{r}
-offers_sp$Pais <- NULL
-#names(offers_sp)
-tail(offers_sp)
+length(subset(offers_sp, SalarioMax < SalarioMin)$SalarioMax)
+```
+
+Veiem que efectivament, tenim 2035 ofertes amb dades inconsistents. Procedirem doncs a eliminar-les.
+
+```{r}
+offers_sp <- subset(offers_sp, SalarioMax >= SalarioMin)
 ```
 
 Per últim, podriem exportar el nostre conjunt de dades netejat.
