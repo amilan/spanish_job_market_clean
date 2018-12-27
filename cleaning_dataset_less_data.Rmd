@@ -36,18 +36,19 @@ Aquest dataset conté informació sobre ofertes laborals trobades a la web propo
 La pregunta que volem respondre amb aquest dataset serà:
 
 - Quines regions d'Espanya generen més ofertes de treball?
+- Podem fer prediccións sobre salaris mínims i màxims?
+- Estudi sobre els salaris en relació a les regions. Tenim regions amb salari mínim superior a la resta?
+
+A la pràctica anterior enumerabem també les següents idees que deixarem per possibles futurs estudis:
+
+- A on trobem un major salari?
 - Quin tipus de professional es el més solicitat a Espanya (durant el periode de mostreig)?
-- Estudi sobre els salaris en relació a les regions. A on trobem un major salari?
-
-A la pràctica anterior enumerabem també les següents idees:
-
 - Analitzar els diferents requeriments professionals que tenen les diferents autonomies d'Espanya.
 - Identificar el tipus i la qualitat del treball actual al país.
 - Analitzar les regions amb més i menys ofertes de treball.
 - Analitzar la distribució de les diferents professions en funció de la regió.
 - Ajudar a la creació d’un pla per potenciar el mercat laboral basat en el coneixement obtingut a través de les dades.
 
-Però aquestes les deixarem per futurs treballs.
 
 ## 2. Integració i selecció de les dades d'interès a analitzar
 
@@ -238,24 +239,24 @@ length(offers$salarioMax)
 
 Passem ara a netejar les característiques numériques. Veiem que aproximadament una quarta part de les dades dispossen de valors de salari mínim i máxim. Aquests ens podrien ser suficient per al nostres estudi, sempre i quan tinguem suficient casos d'estudi per a les diferentes regions.
 
-Llavors, ens quedarem amb les dades que tenen un salari mínim i descartarem la resta.
+Llavors, ens quedarem amb les dades que tenen un salari màxim, ja que aquest grups es menor que els que tenen salari mínim, i descartarem la resta.
 
 ```{r}
-offers_sp <- subset(offers, !is.na(offers$salarioMin))
+offers_sp <- subset(offers, !is.na(offers$salarioMax))
 ```
 
 ```{r}
 sapply(offers_sp, function(x)(sum(is.na(x))))
 ```
 
-Com que hi ha menys dades amb salari máxim, podriem seguir alguna de les següents estratègies:
-- Descartar les dades sense salari maxim. Això reduiría molt el nombre de dades, però encara tindriem prou per al estudi que volem realitzar.
-- Imputar dades utilitzant KNN. Amb aquesta estratègia podriem obtenir els valors en funció de les dades veines.
+Com que hi ha menys dades amb salari màxim que mínim, podriem haver seguit alguna de les següents estratègies:
+- Descartar les dades sense salari màxim. Això reduiría molt el nombre de dades, però encara tindriem prou per al estudi que volem realitzar. Aquesta ha estat la estratégia seguida.
+- Imputar dades utilitzant KNN. Amb aquesta estratègia podriem obtenir els valors en funció de les dades veines. El problema amb aquesta estratégia es que estariem imputant aproximadament tres quartes parts de les nostres dades, la qual cosa ens portaria a problemes d'anàlisi posterior. Aquesta estratégia la vaig probar en versions diferents d'aquest treball, obtenint resultats erronis.
 - Imputar els valors en funció de la mitjana poblacional de la mostra.
 
-En aquesta ocasió utilitzarem l'algoritme KNN.
+En cas de voloer imputar els valors mitjançant l'algoritme KNN ho fariem de la següent manera.
 
-```{r}
+```{r, eval=FALSE}
 offers_sp$salarioMax <- kNN(offers_sp)$salarioMax
 sapply(offers_sp, function(x)(sum(is.na(x))))
 ```
@@ -549,14 +550,45 @@ Farem servir un contrast sobre la diferència de mitjanes. Com que les nostres d
 > TODO: Problema, no tenim homogeneitat a la variancia ... 
 
 ```{r}
-t.test(offers_cat$SalarioMin, offers_no_cat$SalarioMin, alternative = "greater")
+t_test_no_cat <- t.test(offers_cat$SalarioMin, offers_no_cat$SalarioMin, alternative = "greater")
+t_test_no_cat
 ```
 
-Com que el p-value es major que 0.05, no podem rebutjar la hipòtesi nul·la, lo que vol dir que no podem afirmar que el salari mínim les ofertes de treball a Catalunya sigui més alt que a la resta d'Espanya.
+Com que el p-value es menor que 0.05, podem rebutjar la hipòtesi nul·la a favor de la hipòtesi alternativa, lo que vol dir que podem afirmar que el salari mínim les ofertes de treball a Catalunya sigui més alt que a la resta d'Espanya.
+
+Mirem ara si això es compleix també en la resta de comunitats que volem estudiar.
+
+```{r}
+offers_no_mad <- subset(offers_sp, !(Comunidad=="MADRID"))
+t_test_no_mad <- t.test(offers_mad$SalarioMin, offers_no_mad$SalarioMin, alternative = "greater")
+offers_no_and <- subset(offers_sp, !(Comunidad=="ANDALUCÍA"))
+t_test_no_and <- t.test(offers_and$SalarioMin, offers_no_and$SalarioMin, alternative = "greater")
+offers_no_val <- subset(offers_sp, !(Comunidad=="COMUNIDAD VALENCIANA"))
+t_test_no_val <- t.test(offers_val$SalarioMin, offers_no_val$SalarioMin, alternative = "greater")
+```
+
 
 # 5. Representació dels resultats a partir de taules i gràfiques.
 
+```{r}
+results_coms <- cbind(t_test_no_cat$p.value, t_test_no_mad$p.value, t_test_no_and$p.value, t_test_no_val$p.value)
+results_coms
+```
+
+Podem veure que tant a Catalunya com a Madrid, tením p-values menors a 0.05 que es el nostre valor de significació, amb la qual cosa rebutjem les hipòtesis nul·les en favor de les alternatives, i això ens porta a concloure que la mitjana en els salaris mínims de les ofertes de treball a Catalunya i Madrid estàn per sobre de les ofertes a la resta del país. En canvi, a Andalucía i València tenim els casos contraris.
+
 # 6. Resolució del problema. A partir dels resultats obtinguts, quines són les conclusions? Els resultats permeten respondre al problema?
 
-# 7. Codi: Cal adjuntar el codi
+Les tres preguntes plantejades a l'inici de la pràctica eran les següents:
+
+- Quines regions d'Espanya generen més ofertes de treball?
+- Podem fer prediccións sobre salaris mínims i màxims?
+- Estudi sobre els salaris en relació a les regions. Tenim regions amb salari mínim superior a la resta?
+
+Per tal de respondre a la primera pregunta, podem veure al sumari de les nostres dades que les regions amb més ofertes publicades son Madrid, Catalunya, Andalucia i Comunitat Valenciana.
+
+Com hem pogut veure al llarg de la pràctica, amb les dades existents som capaços d'elaborar un model predictiu bassat en regressió lineal per tal de predir els salaris màxims (o mínims si volguessim), en funció dels salaris mínims, donant resposta així a la segona pregunta.
+
+Per últim, per tal de resoldre la tercera pregunta, hem pogut comprobar que de les quatre regions amb més ofertes de treball públicades, a les regions de Catalunya i Madrid tením salaris mínims més elevats que a la resta del país, mentres que a Andalucia i Valencia no passa igual.
+
 
