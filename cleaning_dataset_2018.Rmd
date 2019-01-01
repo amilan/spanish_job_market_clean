@@ -3,9 +3,10 @@ title: "Cleaning Spanish Job Market Dataset"
 author: "Antonio Milán Otero"
 date: "December 15, 2018"
 output:
-  pdf_document:
-    toc: yes
   html_document:
+    toc: yes
+  pdf_document:
+    latex_engine: xelatex
     toc: yes
   html_notebook: 
     toc: yes
@@ -28,7 +29,7 @@ library(plyr)
 library(gdata)
 ```
 
-## 1. Descripció del dataset
+# 1. Descripció del dataset
 
 Aquest dataset prové de la pràctica anterior, en la qual, no vaig prestar gens d'atenció a la neteja de les dades, donant com a resultat un dataset molt brut. Això es va fer a proposit per tal de poder aprofitar el dataset en aquesta pràctica.
 
@@ -47,7 +48,8 @@ head(offers)
 ```{r}
 features_length <- length(offers)
 df_length <- length(offers$categoria)
-sprintf("Dataset amb %d característiques i %d registres", features_length, df_length)
+sprintf("Dataset amb %d característiques i %d registres",
+        features_length, df_length)
 ```
 
 Com podem veure, tenim 40534 registres i 94 característiques, moltes de les quals no ens seràn d'utilitat. Podriem mirar ara quines son aquestes 94 variables.
@@ -67,13 +69,15 @@ Veiem que per tal d'estudiar els salaris ofertats, tenim dues característiques 
 ```{r}
 sal_min_mean <- mean(offers$salarioMin, na.rm = TRUE)
 sal_min_sd <- sd(offers$salarioMin, na.rm = TRUE)
-sprintf("Mitjana del salari mínim de les ofertes: %f, amb una desviació estandard de: %f", sal_min_mean, sal_min_sd)
+sprintf("Mitjana del salari mínim de les ofertes: %f, amb una desviació estandard de: %f",
+        sal_min_mean, sal_min_sd)
 ```
 
 ```{r}
 sal_max_mean <- mean(offers$salarioMax, na.rm = TRUE)
 sal_max_sd <- sd(offers$salarioMax, na.rm = TRUE)
-sprintf("Mitjana del salari màxim de les ofertes: %f, amb una desviació estandard de: %f", sal_max_mean, sal_max_sd)
+sprintf("Mitjana del salari màxim de les ofertes: %f, amb una desviació estandard de: %f",
+        sal_max_mean, sal_max_sd)
 ```
 
 Amb tota aquesta informació, podem enumerar quines son les preguntes que volem respondre:
@@ -93,7 +97,7 @@ A la pràctica anterior enumerabem també les següents idees que deixarem obert
 - Ajudar a la creació d’un pla per potenciar el mercat laboral basat en el coneixement obtingut a través de les dades.
 
 
-## 2. Integració i selecció de les dades d'interès a analitzar
+# 2. Integració i selecció de les dades d'interès a analitzar
 
 Per aquest apartat ja es va crear un script python que s'encarregaba de compilar les dades obtingudes en diferents dies. La idea darrera d'aquest script era la de recolectar totes les dades disponibles a la web en una primera pasada, i desprès anar actualitzant el dataset agafant dades diaries i agrupant-les sota el mateix fitxer .csv
 
@@ -132,8 +136,6 @@ També podriem haver canviat la codificació dels caracters, com veurem més end
 Seleccionem ara només les ofertes a Espanya.
 
 ```{r}
-#offers <- subset(offers, !(paisS %in% c("CONGO"))
-#offers <- subset(offers, !(paisS == "CONGO"))
 offers <- subset(offers, paisS == "ESPAÑA")
 levels(factor(offers$paisS))
 # paisS es ara del tipus chr, hauriem de convertirla de nou a factor
@@ -157,7 +159,9 @@ Seguidament, eliminarem les colummnes que ofereixen informació duplicada. Ens q
 - subcategoriaS
 
 ```{r}
-selected_features <- c("categoriaF", "comunidadF", "educacionF", "fechaCreacion", "jornadaF", "provinciaS", "salarioMax", "salarioMin", "subcategoriaS")
+selected_features <- c("categoriaF", "comunidadF", "educacionF",
+                       "fechaCreacion", "jornadaF", "provinciaS",
+                       "salarioMax", "salarioMin", "subcategoriaS")
 offers <- offers[selected_features]
 head(offers)
 ```
@@ -272,8 +276,11 @@ levels(offers$educacionF)
 Tot i la conversió, encara tenim algun cas que no s'ha codificat correctament. El corregirem manualment.
 
 ```{r}
-offers$educacionF <- sub("Diplomado o Ingeniero TÃ©cnico", "Diplomado o Ingeniero Técnico", offers$educacionF)
-offers$educacionF <- sub("Sin especificar", "", offers$educacionF)
+offers$educacionF <- sub("Diplomado o Ingeniero TÃ©cnico",
+                         "Diplomado o Ingeniero Técnico",
+                         offers$educacionF)
+offers$educacionF <- sub("Sin especificar", "",
+                         offers$educacionF)
 offers$educacionF <- factor(offers$educacionF)
 levels(offers$educacionF)
 ```
@@ -281,7 +288,9 @@ levels(offers$educacionF)
 ```{r}
 length(levels(offers$educacionF))
 # Convertim els valors buits en NA per reconvertir-los a Unknown.
-offers$educacionF <- NAToUnknown(unknownToNA(offers$educacionF, unknown = ""), unknown = "Unknown")
+offers$educacionF <- NAToUnknown(unknownToNA(offers$educacionF,
+                                             unknown = ""),
+                                 unknown = "Unknown")
 levels(offers$educacionF)
 length(levels(offers$educacionF))
 ```
@@ -339,7 +348,9 @@ sapply(offers, function(x)(class(x)))
 Veiem que haurem de tractar el format de la característica fechaCreacion. En aquest moment, tenim la data com a un string amb el format: anys, mes, dia, hora. En el nostre cas, nomès amb l'any, mes i dia en tindrem prou. A més, haurem de donar-li el tipus de date type.
 
 ```{r}
-offers$fechaCreacion <- as.Date(gsub("T\\d*:\\d*:\\d*Z", "", offers$fechaCreacion))
+offers$fechaCreacion <- as.Date(gsub("T\\d*:\\d*:\\d*Z",
+                                     "",
+                                     offers$fechaCreacion))
 sapply(offers, function(x)(class(x)))
 ```
 
@@ -354,7 +365,10 @@ names(offers)
 ```
 
 ```{r}
-final_names <- c("Categoria", "Comunidad", "Educacion", "FechaCreacion", "TipoJornada", "Provincia", "SalarioMax", "SalarioMin", "SubCategoria")
+final_names <- c("Categoria", "Comunidad", "Educacion",
+                 "FechaCreacion", "TipoJornada",
+                 "Provincia", "SalarioMax", "SalarioMin",
+                 "SubCategoria")
 names(offers) <- final_names
 head(offers)
 ```
@@ -429,7 +443,8 @@ Veiem que tenim valors extrems tant en els salaris màxims com en els mínims. E
 subset(offers, SalarioMax == 9999999)
 ```
 
-```{r}
+>TODO: to be removed.
+```{r, eval=FALSE}
 subset(offers, SalarioMin == 0)
 ```
 
@@ -452,13 +467,7 @@ Veiem que els valors extrems que tenim ara son més raonables, i considero que e
 Per al nostre estudi ens interesen les dades totals dels salaris máxims i mínims, però també estudiarem les característiques d'aquests salaris ofertats en les 4 communitats autónomes amb més ofertes.
 
 ```{r}
-# barplot(sort(summary(offers$Comunidad), decreasing = TRUE), las=2)
 barplot(sort(summary(offers$Comunidad)), horiz = TRUE, las=2, cex.names = 0.30)
-```
-
-```{r}
-#barplot(sort(summary(offers$Comunidad)), horiz = TRUE, las=2, cex.names = 0.50)
-#ggplot(sort(summary(offers$Comunidad))) + geom_bar()
 ```
 
 Amb aquest gràfic ja podem donar resposta a la primera de les preguntes plantejades: Quines regions d'Espanya generen més ofertes de treball?
@@ -647,6 +656,7 @@ Podriem comprovar ara les mateixes correlacions per a les regions que estem anal
 cor_vector <- numeric(5)
 i <- 1
 
+layout(matrix(c(1,2,3,4,5),1,1))
 for(data in list(offers_cat,offers_mad,offers_and,offers_val,offers_gal)){
   cor_matrix <- cor(data$SalarioMin, data$SalarioMax)
   # print(round(cor_matrix, 2))
