@@ -67,13 +67,13 @@ Veiem que per tal d'estudiar els salaris ofertats, tenim dues característiques 
 ```{r}
 sal_min_mean <- mean(offers$salarioMin, na.rm = TRUE)
 sal_min_sd <- sd(offers$salarioMin, na.rm = TRUE)
-sprintf("Salari mínim de les ofertes: %f, amb una desviació estandard de: %f", sal_min_mean, sal_min_sd)
+sprintf("Mitjana del salari mínim de les ofertes: %f, amb una desviació estandard de: %f", sal_min_mean, sal_min_sd)
 ```
 
 ```{r}
 sal_max_mean <- mean(offers$salarioMax, na.rm = TRUE)
 sal_max_sd <- sd(offers$salarioMax, na.rm = TRUE)
-sprintf("Salari màxim de les ofertes: %f, amb una desviació estandard de: %f", sal_max_mean, sal_max_sd)
+sprintf("Mitjana del salari màxim de les ofertes: %f, amb una desviació estandard de: %f", sal_max_mean, sal_max_sd)
 ```
 
 Amb tota aquesta informació, podem enumerar quines son les preguntes que volem respondre:
@@ -359,7 +359,13 @@ names(offers) <- final_names
 head(offers)
 ```
 
-Després de fer aquesta neteja, encara podriem comprobar si les nostres dades son consistents. Per fer aixó podriem mirar si tenim ofertes en les que el salari mínim sigui mallor que el salari màxim, i de ser així, eliminar-les del nostre dataset.
+Ara que tenim la variable FechaCreacion com a tipus Date, podriem filtrar les ofertes i quedar-nos només amb les publicades al 2018.
+
+```{r}
+offers <- subset(offers, FechaCreacion >= "2018-01-01")
+```
+
+Després de fer aquesta neteja, encara podriem comprovar si les nostres dades son consistents. Per fer aixó podriem mirar si tenim ofertes en les que el salari mínim sigui mallor que el salari màxim, i de ser així, eliminar-les del nostre dataset.
 
 ```{r}
 length(subset(offers, SalarioMax < SalarioMin)$SalarioMax)
@@ -757,6 +763,15 @@ pred_table
 ggplot() +
   geom_point(data = as.data.frame(pred_table), aes(c("Cataluña", "Madrid", "Andalucia", "Valencia", "Galicia"), Salary_prediction, colour='Modelo por Comunidades'), size = 3) +
   geom_point(data = as.data.frame(pred_m1_table), aes(c("Cataluña", "Madrid", "Andalucia", "Valencia", "Galicia"), Salary_prediction_model_1, colour = 'Modelo 1'), size = 3) +
+  labs(x="Comunidades Autónomas", y="Salario Máximo", title="Prediccion Salario Máximo") + 
+  theme(legend.position = "right")
+```
+
+```{r}
+#plot(pred_table)
+ggplot() +
+  geom_bar(data = as.data.frame(pred_table), aes(Salary_prediction, colour='Modelo por Comunidades'), position = "dodge") +
+  geom_bar(data = as.data.frame(pred_m1_table), aes( Salary_prediction_model_1, colour = 'Modelo 1'), position = "dodge") +
   labs(x="Comunidades Autónomas", y="Salario Máximo", title="Prediccion Salario Máximo") + 
   theme(legend.position = "right")
 ```
