@@ -3,10 +3,10 @@ title: "Cleaning Spanish Job Market Dataset"
 author: "Antonio Milán Otero"
 date: '`r format(Sys.Date(),"%e de %B %Y")`'
 output:
+  html_document:
+    toc: yes
   pdf_document:
     latex_engine: xelatex
-    toc: yes
-  html_document:
     toc: yes
 ---
 
@@ -27,15 +27,16 @@ library(plyr)
 library(gdata)
 ```
 
+\newpage
 # 1. Descripció del dataset
 
-Aquest dataset conté informació sobre ofertes laborals trobades a la web proporcionada per l'estat Espanyol per a tal proposit: <https://www.empleate.gob.es/empleo/#/>. Les ofertes contingudes tenen data d'entre Juny de 2016 i Novembre del 2018, sent la gran majoria de les ofertes del 2018.
+Aquest dataset conté informació sobre ofertes laborals trobades a la web proporcionada per l'estat Espanyol per a tal propòsit: <https://www.empleate.gob.es/empleo/#/>. Les ofertes contingudes tenen data d'entre Juny de 2016 i Novembre del 2018, sent la gran majoria de les ofertes del 2018.
 
-Aquest dataset prové de la pràctica anterior, en la qual, no vaig prestar gens d'atenció a la neteja de les dades, donant com a resultat un dataset molt brut. Això es va fer a proposit per tal de poder aprofitar el dataset en aquesta pràctica.
+Aquest dataset prové de la pràctica anterior, en la qual, no vaig prestar gens d'atenció a la neteja de les dades, donant com a resultat un dataset molt brut. Això es va fer a propòsit per tal de poder aprofitar el dataset en aquesta pràctica.
 
-Per tal de donar a entendre una mica més el contingut d'aquest dataset, pasarem a inspeccionar algunes de les seves característiques.
+Per tal de donar a entendre una mica més el contingut d'aquest dataset, passarem a inspeccionar algunes de les seves característiques.
 
-Començem carregant les dades:
+Comencem carregant les dades:
 
 ```{r}
 offers <- read.csv("../data/offers_dataset.csv")
@@ -50,13 +51,13 @@ sprintf("Dataset amb %d característiques i %d registres",
         features_length, df_length)
 ```
 
-Com podem veure, tenim 40534 registres i 94 característiques, moltes de les quals no ens seràn d'utilitat. Podriem mirar ara quines son aquestes 94 variables.
+Com podem veure, tenim 40534 registres i 94 característiques, moltes de les quals no ens seran d'utilitat. Podríem mirar ara quines son aquestes 94 variables.
 
 ```{r}
 names(offers)
 ```
 
-Veiem també que tenim moltes variables que están duplicades o que no ens proporcionaran informació necessaria per als nostres estudis. Podriem consultar més detalls d'aquest dataset amb la següent commanda, que no executarem per tal d'afavorir la lectura d'aquest document:
+Veiem també que tenim moltes variables que estan duplicades o que no ens proporcionaran informació necessària per als nostres estudis. Podríem consultar més detalls d'aquest dataset amb la següent comanda, que no executarem per tal d'afavorir la lectura d'aquest document:
 
 ```{r eval=FALSE}
 summary(offers)
@@ -67,51 +68,51 @@ Veiem que per tal d'estudiar els salaris ofertats, tenim dues característiques 
 ```{r}
 sal_min_mean <- mean(offers$salarioMin, na.rm = TRUE)
 sal_min_sd <- sd(offers$salarioMin, na.rm = TRUE)
-sprintf("Mitjana del salari mínim de les ofertes: %f, amb una desviació estandard de: %f",
-        sal_min_mean, sal_min_sd)
+sprintf("Mitjana del salari mínim de les ofertes: %f,", sal_min_mean)
+sprintf("    amb una desviació estàndard de: %f",sal_min_sd)
 ```
 
 ```{r}
 sal_max_mean <- mean(offers$salarioMax, na.rm = TRUE)
 sal_max_sd <- sd(offers$salarioMax, na.rm = TRUE)
-sprintf("Mitjana del salari màxim de les ofertes: %f, amb una desviació estandard de: %f",
-        sal_max_mean, sal_max_sd)
+sprintf("Mitjana del salari màxim de les ofertes: %f,", sal_max_mean)
+sprintf("    amb una desviació estàndard de: %f",sal_max_sd)
 ```
 
 Amb tota aquesta informació, podem enumerar quines son les preguntes que volem respondre:
 
 1. Quines regions d'Espanya generen més ofertes de treball?
-2. Podem fer prediccións sobre salaris mínims i màxims?
+2. Podem fer prediccions sobre salaris mínims i màxims?
 3. Estudi sobre els salaris en relació a les 5 regions que generen més ofertes. Tenim regions amb salari mínim superior a la resta? I a la categoria d'informàtica i telecomunicacions?
 
-A la pràctica anterior enumerabem també les següents idees que deixarem obertes per a possibles futurs estudis i que __no__ formen part dels objectius d'aquest treball:
+A la pràctica anterior enumeràvem també les següents idees que deixarem obertes per a possibles futurs estudis i que __no__ formen part dels objectius d'aquest treball:
 
 - A on trobem un major salari?
-- Quin tipus de professional és el més solicitat a Espanya (durant el periode de mostreig)?
+- Quin tipus de professional és el més sol·licitat a Espanya (durant el període de mostreig)?
 - Analitzar els diferents requeriments professionals que tenen les diferents autonomies d'Espanya.
 - Identificar el tipus i la qualitat del treball actual al país.
 - Analitzar les regions amb més i menys ofertes de treball.
 - Analitzar la distribució de les diferents professions en funció de la regió.
 - Ajudar a la creació d’un pla per potenciar el mercat laboral basat en el coneixement obtingut a través de les dades.
 
-
+\newpage
 # 2. Integració i selecció de les dades d'interès a analitzar
 
-Per aquest apartat ja es va crear un script python que s'encarregaba de compilar les dades obtingudes en diferents dies. La idea darrera d'aquest script era la de recolectar totes les dades disponibles a la web en una primera pasada, i desprès anar actualitzant el dataset agafant dades diaries i agrupant-les sota el mateix fitxer .csv
+Per aquest apartat ja es va crear un script python que s'encarregava de compilar les dades obtingudes en diferents dies. La idea darrera d'aquest script era la de recol·lectar totes les dades disponibles a la web en una primera passada, i desprès anar actualitzant el dataset agafant dades diàries i agrupant-les sota el mateix fitxer .csv
 
 Per tant, en aquest apartat considero que no haig de fer més que el ja s'ha fet fins a la data.
 
 El script es pot trobar en la següent URL:
 [https://github.com/amilan/spanish_job_market/blob/master/src/dataset_merge.py]
 
-També tinc en compte, que la web oficial de la qual es va extreure les dades, ja recompila aquestes dades de diferent fonts, així doncs, no considero que sigui necessari l'integració de dades de diferentes fonts, ja que aquesta ha estat realitzada anteriorment.
+També tinc en compte, que la web oficial de la qual es va extreure les dades, ja recopila aquestes dades de diferent fonts, així doncs, no considero que sigui necessari la integració de dades de diferents fonts, ja que aquesta ha estat realitzada anteriorment.
 
-Per tot això, en aquest apartat només seleccionarem les dades necessaries per als nostres estudis.
+Per tot això, en aquest apartat només seleccionarem les dades necessàries per als nostres estudis.
 
-Hem de tenir en compte, que a la pràctica anterior hem vaig limitar a agafar totes les dades possibles i a possar-les en un fitxer .csv.
-Aquestes dades provenien d'una base de dades NoSQL, ja que vaig detectar que amb les mateixes crides, podiem obtenir dades amb diferents esquemes (schemaless). Així doncs, farem una selecció de les dades que utilitzarem i eliminarem així dades no necessàries o repetides.
+Hem de tenir en compte, que a la pràctica anterior hem vaig limitar a agafar totes les dades possibles i a posar-les en un fitxer .csv.
+Aquestes dades provenien d'una base de dades NoSQL, ja que vaig detectar que amb les mateixes crides, podíem obtenir dades amb diferents esquemes (schemaless). Així doncs, farem una selecció de les dades que utilitzarem i eliminarem així dades no necessàries o repetides.
 
-Començarem seleccionant les dades d'interés. Recordem que la meva intenció es la de fer un estudi sobre els salaris mínims i màxims de les ofertes de treball a Espanya i en concret a les comunitats autónomes que més ofertes generen. Tot i així, enfocaré aquest primer pas de neteja amb una mirada més amplia i afegiré algunes característiques extra que hem puguin ser d'utilitat en futures revisions o expansions d'aquest treball. Guardaré aquetes dades netejades en un nou fitxer .csv i després faré una segona neteja per tal de quedar-me només amb les dades d'interés per aquest treball.
+Començarem seleccionant les dades d'interès. Recordem que la meva intenció es la de fer un estudi sobre els salaris mínims i màxims de les ofertes de treball a Espanya i en concret a les comunitats autònomes que més ofertes generen. Tot i així, enfocaré aquest primer pas de neteja amb una mirada més amplia i afegiré algunes característiques extra que hem puguin ser d'utilitat en futures revisions o expansions d'aquest treball. Guardaré aquetes dades netejades en un nou fitxer .csv i després faré una segona neteja per tal de quedar-me només amb les dades d'interès per aquest treball.
 
 Primerament, comprovarem que només tenim dades d'ofertes realitzades a Espanya.
 
@@ -119,9 +120,9 @@ Primerament, comprovarem que només tenim dades d'ofertes realitzades a Espanya.
 levels(offers$paisS)
 ```
 
-Comprovem dues coses, que tenim ofertes d'Espanya i també al Congo, i que tenim un problema de codificació de caracters, ja que ens troba el país d'Espanya en tres factors diferents. Com que només volem utilitzar les dades de les ofertes a Espanya, podem seleccionar totes les que no siguin al Congo i desprès eliminar aquesta columna.
+Comprovem dues coses, que tenim ofertes d'Espanya i també al Congo, i que tenim un problema de codificació de caràcters, ja que ens troba el país d'Espanya en tres factors diferents. Com que només volem utilitzar les dades de les ofertes a Espanya, podem seleccionar totes les que no siguin al Congo i desprès eliminar aquesta columna.
 
-Podem corregir les dades erronees de país:
+Podem corregir les dades errònies de país:
 
 ```{r}
 offers$paisS <- sub("ESPAÃ‘A", "ESPAÑA", offers$paisS)
@@ -129,14 +130,14 @@ offers$paisS <- sub("ESPA��A", "ESPAÑA", offers$paisS)
 levels(factor(offers$paisS))
 ```
 
-També podriem haver canviat la codificació dels caracters, com veurem més endavant.
+També podríem haver canviat la codificació dels caràcters, com veurem més endavant.
 
 Seleccionem ara només les ofertes a Espanya.
 
 ```{r}
 offers <- subset(offers, paisS == "ESPAÑA")
 levels(factor(offers$paisS))
-# paisS es ara del tipus chr, hauriem de convertirla de nou a factor
+# paisS es ara del tipus chr, hauríem de convertirla de nou a factor
 offers$paisS <- factor(offers$paisS)
 ```
 
@@ -144,7 +145,7 @@ offers$paisS <- factor(offers$paisS)
 class(offers$paisS)
 ```
 
-Seguidament, eliminarem les colummnes que ofereixen informació duplicada. Ens quedarem amb les característiques:
+Seguidament, eliminarem les columnes que ofereixen informació duplicada. Ens quedarem amb les característiques:
 
 - categoriaF
 - comunidadF
@@ -164,9 +165,10 @@ offers <- offers[selected_features]
 head(offers)
 ```
 
+\newpage
 # 3. Neteja de les dades
 
-Com que ens hem adonat abans que hi teniem problemes de codificació amb els strings, lo primer que farem serà corregir aquests problemes. Cal destacar que per tal d'afavorir la lectura del document, no mostrarem tots els factors de les variables, només els sis primers.
+Com que ens hem adonat abans que hi teníem problemes de codificació amb els strings, lo primer que farem serà corregir aquests problemes. Cal destacar que per tal d'afavorir la lectura del document, no mostrarem tots els factors de les variables, només els sis primers.
 
 
 ```{r}
@@ -305,7 +307,7 @@ sapply(offers, function(x)(sum(is.na(x))))
 length(offers$salarioMax)
 ```
 
-Passem ara a netejar les característiques numériques. Veiem que aproximadament una quarta part de les dades dispossen de valors de salari mínim i máxim. Aquests ens podrien ser suficient per al nostres estudi, sempre i quan tinguem suficient casos d'estudi per a les diferentes regions.
+Passem ara a netejar les característiques numèriques. Veiem que aproximadament una quarta part de les dades disposen de valors de salari mínim i màxim. Aquests ens podrien ser suficient per al nostres estudi, sempre i quan tinguem suficient casos d'estudi per a les diferents regions.
 
 Llavors, ens quedarem amb les dades que tenen un salari màxim, ja que aquest grup és menor que els que tenen salari mínim, i descartarem la resta.
 
@@ -319,25 +321,25 @@ Comprovem que ja no tenim cap valor NA.
 sapply(offers, function(x)(sum(is.na(x))))
 ```
 
-Com que hi ha menys dades amb salari màxim que mínim, podriem haver seguit alguna de les següents estratègies:
-- Descartar les dades sense salari màxim. Això reduiría molt el nombre de dades, però encara tindriem prou per al estudi que volem realitzar. Aquesta ha estat la estratégia seguida.
-- Imputar dades utilitzant KNN. Amb aquesta estratègia podriem obtenir els valors en funció de les dades veines. El problema amb aquesta estratégia es que estariem imputant aproximadament tres quartes parts de les nostres dades, la qual cosa ens portaria a problemes d'anàlisi posterior. Aquesta estratégia la vaig probar en versions diferents d'aquest treball, obtenint resultats erronis.
+Com que hi ha menys dades amb salari màxim que mínim, podríem haver seguit alguna de les següents estratègies:
+- Descartar les dades sense salari màxim. Això reduiria molt el nombre de dades, però encara tindríem prou per al estudi que volem realitzar. Aquesta ha estat la estratègia seguida.
+- Imputar dades utilitzant KNN. Amb aquesta estratègia podríem obtenir els valors en funció de les dades veïnes. El problema amb aquesta estratègia es que estaríem imputant aproximadament tres quartes parts de les nostres dades, la qual cosa ens portaria a problemes d'anàlisi posterior. Aquesta estratègia la vaig provar en versions diferents d'aquest treball, obtenint resultats erronis.
 - Imputar els valors en funció de la mitjana poblacional de la mostra.
 
-En cas de voler imputar els valors mitjançant l'algoritme KNN ho fariem de la següent manera.
+En cas de voler imputar els valors mitjançant l'algoritme KNN ho faríem de la següent manera.
 
 ```{r, eval=FALSE}
 offers$salarioMax <- kNN(offers)$salarioMax
 sapply(offers, function(x)(sum(is.na(x))))
 ```
 
-Seguidament podriem comprovar si les nostres dades tenen el tipus que desitjem.
+Seguidament podríem comprovar si les nostres dades tenen el tipus que desitgem.
 
 ```{r}
 sapply(offers, function(x)(class(x)))
 ```
 
-Veiem que haurem de tractar el format de la característica fechaCreacion. En aquest moment, tenim la data com a un string amb el format: anys, mes, dia, hora. En el nostre cas, nomès amb l'any, mes i dia en tindrem prou. A més, haurem de donar-li el tipus de date type.
+Veiem que haurem de tractar el format de la característica fechaCreacion. En aquest moment, tenim la data com a un string amb el format: anys, mes, dia, hora. En el nostre cas, només amb l'any, mes i dia en tindrem prou. A més, haurem de donar-li el tipus de date type.
 
 ```{r}
 offers$fechaCreacion <- as.Date(gsub("T\\d*:\\d*:\\d*Z",
@@ -365,13 +367,13 @@ names(offers) <- final_names
 head(offers)
 ```
 
-Ara que tenim la variable FechaCreacion com a tipus Date, podriem filtrar les ofertes i quedar-nos només amb les publicades al 2018.
+Ara que tenim la variable FechaCreacion com a tipus Date, podríem filtrar les ofertes i quedar-nos només amb les publicades al 2018.
 
 ```{r}
 offers <- subset(offers, FechaCreacion >= "2018-01-01")
 ```
 
-Després de fer aquesta neteja, encara podriem comprovar si les nostres dades son consistents. Per fer aixó podriem mirar si tenim ofertes en les que el salari mínim sigui mallor que el salari màxim, i de ser així, eliminar-les del nostre dataset.
+Després de fer aquesta neteja, encara podríem comprovar si les nostres dades son consistents. Per fer això podríem mirar si tenim ofertes en les que el salari mínim sigui major que el salari màxim, i de ser així, eliminar-les del nostre dataset.
 
 ```{r}
 length(subset(offers, SalarioMax < SalarioMin)$SalarioMax)
@@ -383,13 +385,13 @@ Veiem que efectivament, tenim ofertes amb dades inconsistents. Procedirem doncs 
 offers <- subset(offers, SalarioMax >= SalarioMin)
 ```
 
-En aquest punt, ens adonem que hi ha un tipus de registres en els quals tenim 0 a salari minim i máxim, lo que vol dir que aquestes ofertes no han introduit un valor real en quant als salaris, o bé son ofertes de pràctiques no remunerades. Ninguna d'aquestes opcions les volem contemplar en el nostre estudi, així que com tenim dades suficients, podem prescindir d'aquestes.
+En aquest punt, ens adonem que hi ha un tipus de registres en els quals tenim 0 a salari mínim i màxim, lo que vol dir que aquestes ofertes no han introduït un valor real en quant als salaris, o bé son ofertes de pràctiques no remunerades. Ninguna d'aquestes opcions les volem contemplar en el nostre estudi, així que com tenim dades suficients, podem prescindir d'aquestes.
 
 ```{r}
 offers <- subset(offers, !(SalarioMin == 0 & SalarioMax == 0))
 ```
 
-Finalment, podriem exportar el nostre conjunt de dades netejat.
+Finalment, podríem exportar el nostre conjunt de dades netejat.
 
 ```{r}
 write.csv(offers, "../data/spanish_job_offers_clean.csv")
@@ -415,7 +417,7 @@ boxplot(offers$SalarioMin ~ offers$Comunidad, las=2, cex.axis= 0.50)
 boxplot(offers$SalarioMax ~ offers$Comunidad, las=2, cex.axis= 0.50)
 ```
 
-Com a comprovació extra, podem mirar si existeixen valors extrems al filtrar per la categoria: Informática/telecomunicacions. 
+Com a comprovació extra, podem mirar si existeixen valors extrems al filtrar per la categoria: Informàtica/telecomunicacions. 
 
 ```{r}
 boxplot(subset(offers, Categoria == "INFORMÁTICA/TELECOMUNICACIONES"), las=2, cex.axis= 0.60)
@@ -431,7 +433,7 @@ boxplot.stats(offers$SalarioMin)$out
 boxplot.stats(offers$SalarioMax)$out
 ```
 
-Veiem que tenim valors extrems tant en els salaris màxims com en els mínims. En el cas dels salaris mínims, son valor raonables, i crec que els hauriem de deixar tal qual son. En canvi, trobem dos valors extrems molt curiosos, que semblen ser alguna mena de valor prefixat per a no donar un límit superior. En aquest cas, ja que son només dos valors i tenim suficient dades per al nostre estudi, considero que lo millor sería treure les dades corresponents. Així doncs, ho farem de la següent manera.
+Veiem que tenim valors extrems tant en els salaris màxims com en els mínims. En el cas dels salaris mínims, son valor raonables, i crec que els hauríem de deixar tal qual son. En canvi, trobem dos valors extrems molt curiosos, que semblen ser alguna mena de valor prefixat per a no donar un límit superior. En aquest cas, ja que son només dos valors i tenim suficient dades per al nostre estudi, considero que lo millor seria treure les dades corresponents. Així doncs, ho farem de la següent manera.
 
 ```{r}
 subset(offers, SalarioMax == 9999999)
@@ -447,13 +449,13 @@ offers$SalarioMax <- as.numeric(offers$SalarioMax)
 boxplot(offers$SalarioMax ~ offers$Comunidad, las=2, cex.axis= 0.50)
 ```
 
-Veiem que els valors extrems que tenim ara son més raonables, i considero que els podriem deixar tal qual.
+Veiem que els valors extrems que tenim ara son més raonables, i considero que els podríem deixar tal qual.
 
-
+\newpage
 # 4. Anàlisi de les dades
 ## Selecció dels grups de dades que es volen analitzar/comparar
 
-Per al nostre estudi ens interesen les dades totals dels salaris máxims i mínims, però també estudiarem les característiques d'aquests salaris ofertats en les 4 communitats autónomes amb més ofertes.
+Per al nostre estudi ens interessen les dades totals dels salaris màxims i mínims, però també estudiarem les característiques d'aquests salaris ofertats en les 4 comunitats autònomes amb més ofertes.
 
 ```{r}
 barplot(sort(summary(offers$Comunidad)), horiz = TRUE, las=2, cex.names = 0.30)
@@ -461,7 +463,7 @@ barplot(sort(summary(offers$Comunidad)), horiz = TRUE, las=2, cex.names = 0.30)
 
 Amb aquest gràfic ja podem donar resposta a la primera de les preguntes plantejades: Quines regions d'Espanya generen més ofertes de treball?
 
-Podem veure que les 5 primeres regions amb més ofertes de treball son: __Madrid, Catalunya, Andalucía, Comunitat Valenciana i Galicia__.
+Podem veure que les 5 primeres regions amb més ofertes de treball son: __Madrid, Catalunya, Andalusia, Comunitat Valenciana i Galicia__.
 
 Creem doncs els grups a estudiar.
 
@@ -478,7 +480,7 @@ offers_gal <- subset(offers, Comunidad=="GALICIA")
 
 ### Comprovació de la Normalitat
 
-Comprovarem ara si les nostres variables d'interés pertanyen a una distribució normal. Començarem amb una inspecció visual als salaris mínims i màxims.
+Comprovarem ara si les nostres variables d'interès pertanyen a una distribució normal. Començarem amb una inspecció visual als salaris mínims i màxims.
 
 ```{r}
 qqnorm(offers$SalarioMax, main = "Normal Q-Q Plot for SalarioMax")
@@ -517,7 +519,7 @@ shapiro.test(subset(offers, Categoria == "INFORMÁTICA/TELECOMUNICACIONES")$Sala
 
 Veiem que tampoc s'ajusten gairebé a la normalitat.
 
-Podriem també realitzar els càlculs mitjançant un test de Shapiro-Wilk.
+Podríem també realitzar els càlculs mitjançant un test de Shapiro-Wilk.
 
 ```{r}
 shapiro.test(offers$SalarioMax)
@@ -565,7 +567,7 @@ salaries_pvalues
 
 En tots els casos veiem que el valor de p_value no supera el 0.05, amb la qual cosa no passen el test de normalitat, es a dir, no segueixen una distribució normal.
 
-Un cop més, com a cas extra, podriem veure com es comporta el conjunt de dades per a la categoria d'informàtica/telecomunicacions.
+Un cop més, com a cas extra, podríem veure com es comporta el conjunt de dades per a la categoria d'informàtica/telecomunicacions.
 
 ```{r}
 shapiro.test(subset(offers, Categoria == "INFORMÁTICA/TELECOMUNICACIONES")$SalarioMin )
@@ -576,7 +578,7 @@ Veiem que en aquest cas tampoc tenim un p-value superior a 0.05, amb la qual cos
 
 ### Homogeneïtat de la Variància
 
-Seguidament podriem mirar la homogeneïtat de la variància. Per a tal efecte, podriem aplicar un test de Fligner-Killeen.
+Seguidament podríem mirar la homogeneïtat de la variància. Per a tal efecte, podríem aplicar un test de Fligner-Killeen.
 
 ```{r}
 fligner.test(SalarioMin ~ SalarioMax, data=offers )
@@ -586,7 +588,7 @@ fligner.test(SalarioMin ~ SalarioMax, data=offers )
 fligner.test(SalarioMax ~ SalarioMin, data=offers )
 ```
 
-Com que el valor de p_value es menor que 0.05, no podem acceptar la hipòtesi nul·la de que les variàncies son homogenies. Això es compleix en tots dos casos.
+Com que el valor de p_value es menor que 0.05, no podem acceptar la hipòtesi nul·la de que les variàncies son homogènies. Això es compleix en tots dos casos.
 
 Fem ara els mateixos tests per a les diferents regions.
 
@@ -634,7 +636,7 @@ Veiem que es comporta d'igual manera i que tampoc hi ha homogeneïtat de la vari
 
 ### Correlacions
 
-Lógicament, la correlació del salari mínim i màxim ha de ser positiva, en la que a major salari mínim tenim també un major salari màxim. De totes maneres, per il·lustrar aquesta relació, podem calcular el valor de correlació d'aquestes dues variables.
+Lògicament, la correlació del salari mínim i màxim ha de ser positiva, en la que a major salari mínim tenim també un major salari màxim. De totes maneres, per il·lustrar aquesta relació, podem calcular el valor de correlació d'aquestes dues variables.
 
 ```{r}
 cor_matrix <- cor(offers$SalarioMin, offers$SalarioMax)
@@ -650,7 +652,7 @@ Veiem que el coeficient de correlació entre les variables de salari mínim i m�
 
 També podem comprovar aquesta relació a la gràfica d'amunt, a on es mostra gràficament aquesta correlació entre salari mínim i màxim.
 
-Podriem comprovar ara les mateixes correlacions per a les regions que estem analitzant.
+Podríem comprovar ara les mateixes correlacions per a les regions que estem analitzant.
 
 ```{r fig.width=3, fig.height=3}
 cor_vector <- numeric(5)
@@ -678,13 +680,13 @@ pairs(~SalarioMin+SalarioMax,data=subset(offers, Categoria == "INFORMÁTICA/TELE
    main="Simple Salary Scatterplot Matrix")
 ```
 
-D'igual manera, veiem que existeix una correlació en aquestes variables quan filtrem per categoria Informática/telecomunicaciones.
+D'igual manera, veiem que existeix una correlació en aquestes variables quan filtrem per categoria Informàtica/telecomunicaciones.
 
 ### Regressió Lineal
 
-Podriem passar ara a crear diferents models de regressió lineal per tal de predir els salaris màxims.
+Podríem passar ara a crear diferents models de regressió lineal per tal de predir els salaris màxims.
 
-Començem amb un model en el que intentarem obtenir el salari màxim en funció del mínim i la comunitat autónoma de la oferta.
+Comencem amb un model en el que intentarem obtenir el salari màxim en funció del mínim i la comunitat autónoma de la oferta.
 
 
 ```{r}
@@ -694,7 +696,7 @@ model_1 <- lm(SalarioMax ~ SalarioMin + Comunidad, data=offers)
 summary(model_1)$r.squared
 ```
 
-Podem veure que la qualitat del model obtingut no es massa bona amb un R squared de 0.582. Tot i així, amb aquest model podriem fer prediccions com les següents.
+Podem veure que la qualitat del model obtingut no es massa bona amb un R squared de 0.582. Tot i així, amb aquest model podríem fer prediccions com les següents.
 
 ```{r}
 # Salari Màxim si sabem que el mínim es 20000 i l'oferta es a Catalunya.
@@ -744,11 +746,11 @@ colnames(r_square_coms) <- c("R squared")
 r_square_coms
 ```
 
-En aquest cas, la qualitat del nostre model es bastant alta, amb lo qual, les nostres prediccions seràn més fiables.
+En aquest cas, la qualitat del nostre model es bastant alta, amb lo qual, les nostres prediccions seran més fiables.
 
 Comprovem també que el model de regressió lineal per a la comunitat de Madrid té una qualitat molt més baixa, això es degut a que, com hem vist abans, el coeficient de correlació entre el salari mínim i màxim es més baix que a la resta. Això ens donarà unes pitjors prediccions per aquest conjunt de dades.
 
-Mirem ara quina sería la predicció del salari màxim per aquest nou model.
+Mirem ara quina seria la predicció del salari màxim per aquest nou model.
 
 ```{r}
 data_pred <- data.frame(SalarioMin=20000)
@@ -790,7 +792,7 @@ ggplot() +
 
 Veiem que amb aquests models podem fer prediccions sobre quant podria arribar a ser el salari màxim en funció del mínim, la comunitat i la categoria de la oferta.
 
-Podriem mirar ara si som capaços de predir el salari màxim sense fer ús del salari mínim.
+Podríem mirar ara si som capaços de predir el salari màxim sense fer ús del salari mínim.
 
 ```{r}
 
@@ -801,7 +803,7 @@ summary(model_no_salmin)$r.squared
 
 Veiem que la qualitat del model obtingut és molt baixa, amb la qual cosa, si fem ús d'aquest model, les nostres prediccions serien molt poc fiables.
 
-Per últim, podriem fer les mateixes operacions filtrant només per ofertes d'informàtica i telecomunicacions.
+Per últim, podríem fer les mateixes operacions filtrant només per ofertes d'informàtica i telecomunicacions.
 
 ```{r}
 # Creem els nous models de regressió lineal
@@ -880,7 +882,7 @@ També es interessant veure com les nostres prediccions per a la categoria d'inf
 
 ### Contrasts d'Hipòtesi
 
-Seguidament podriem fer un contrast entre regions per tal de donar resposta a la pregunta: a Catalunya es generen ofertes de treball amb un salari mínim superior a la resta d'Espanya?
+Seguidament podríem fer un contrast entre regions per tal de donar resposta a la pregunta: a Catalunya es generen ofertes de treball amb un salari mínim superior a la resta d'Espanya?
 
 Per a tal motiu utilitzarem necessitarem preparar el conjunt de dades de mostres de comunitats diferents a Catalunya.
 
@@ -938,24 +940,26 @@ t_test_inf
 
 Com que també obtenim un valor p-value menor a 0.05, rebutjem l'hipòtesi nul·la en favor de l'alternativa, amb la qual cosa podem dir que els salaris a la categoria d'informàtica i telecomunicacions estàn per sobre de la resta de categories.
 
+\newpage
 # 5. Representació dels resultats a partir de taules i gràfiques
 
-Per a una millor comprensió dels resultats, s'han anat afegint diferentes taules i gràfiques al llarg d'aquesta pràctica. Com que aquest treball dona resposta a diferentes preguntes, considero que el millor lloc per a aquestes gràfiques és al costat dels seus exercicis previs. Per tant, no tornaré a generar-les en aquest apartat, ja que supondria una repetició que no aportaría nova informació.
+Per a una millor comprensió dels resultats, s'han anat afegint diferents taules i gràfiques al llarg d'aquesta pràctica. Com que aquest treball dona resposta a diferents preguntes, considero que el millor lloc per a aquestes gràfiques és al costat dels seus exercicis previs. Per tant, no tornaré a generar-les en aquest apartat, ja que supondria una repetició que no aportaría nova informació.
 
 # 6. Resolució del problema. A partir dels resultats obtinguts, quines són les conclusions? Els resultats permeten respondre al problema?
 
 Les tres preguntes plantejades a l'inici de la pràctica eran les següents:
 
 1. Quines regions d'Espanya generen més ofertes de treball?
-2. Podem fer prediccións sobre salaris mínims i màxims?
+2. Podem fer prediccions sobre salaris mínims i màxims?
 3. Estudi sobre els salaris en relació a les 5 regions que generen més ofertes. Tenim regions amb salari mínim superior a la resta? I a la categoria d'informàtica i telecomunicacions?
 
 Per tal de respondre a la primera pregunta, hem pogut veure tant gràficament com al sumari de les nostres dades, que les regions amb més ofertes publicades son Madrid, Catalunya, Andalusia, Comunitat Valenciana i Galícia.
 
 Com hem pogut veure al llarg de la pràctica, amb les dades existents som capaços d'elaborar un model predictiu bassat en regressió lineal per tal de predir els salaris màxims (o mínims si volguessim), en funció dels salaris mínims, donant resposta així a la segona pregunta. També hem provat a generar un model de regressió lineal que ens permetés predir el salari màxim en funció d'altres variables que no siguin el salari mínim, però la qualitat d'aquest models son molt dolentes i les seves prediccions no serien molt correctes.
 
-Per últim, per tal de resoldre la tercera pregunta, hem pogut comprobar que de les cinc regions amb més ofertes de treball públicades, a les regions de Catalunya i Madrid trobem salaris mínims més elevats que a la resta del país, mentres que a Andalusia, València i Galícia no passa igual. També dintre d'aquesta pregunta hem observat que els salaris de la categoria d'informàtica i telecomunicacions estàn per sobre de la resta de categories.
+Per últim, per tal de resoldre la tercera pregunta, hem pogut comprovar que de les cinc regions amb més ofertes de treball públicades, a les regions de Catalunya i Madrid trobem salaris mínims més elevats que a la resta del país, mentres que a Andalusia, València i Galícia no passa igual. També dintre d'aquesta pregunta hem observat que els salaris de la categoria d'informàtica i telecomunicacions estàn per sobre de la resta de categories.
 
+\newpage
 # 7. Referències
 
 ## Bibliografia:
